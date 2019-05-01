@@ -14,43 +14,37 @@ void exitFunction(int sig) {
 }
 void sig_handler(int signo) {
 
- 	if(signo == SIGINT) {
-		printf("SIGINT is received\n");
+ 	if(signo == SIGALRM) {
+		printf("SIGALRM is received.\n");
+		signal(SIGQUIT, sig_handler);
+		alarm(5);	
 	}
 	else if(signo == SIGQUIT) {
 		printf("SIGQUIT is received\n");
 		cnt++;
 		printf("%d",cnt);
+		signal(SIGQUIT, sig_handler);
 	}
-	else if(signo == SIGALRM) {
-		printf("SIGALRM is received.\n");
-	}
+	
 }
 
 char buf[255];
 
 
 int main(int argc, char *argv[]) {
-
-
-	if(signal(SIGINT, sig_handler) == SIG_ERR) {
-		fprintf(stderr, "Error handling signal\n");
-		exit(1);
+	memset(buf, 0, 255);
+	if(signal(SIGALRM, sig_handler) == SIG_ERR) {
+		fprintf(stderr, "Could not catch SIGQUIT\n");
 	}
 	if(signal(SIGQUIT, sig_handler) == SIG_ERR) {
 		fprintf(stderr, "Could not catch SIGQUIT\n");
 	}
-	if(signal(SIGALRM, sig_handler) == SIG_ERR) {
-		fprintf(stderr, "Could not catch SIGQUIT\n");
-	}else {
-		printf("I will shut down automatically after 5 seconds.\n");
-		signal(SIGALRM, exitFunction);
-		alarm(5);	
+	else {
+		
 	}
 	
 	while(1)
     {
-	memset(buf, 0, 255);
         printf("Enter string: \n");
         fgets(buf, 255, stdin);
         if (strlen(buf) == 0) continue;
