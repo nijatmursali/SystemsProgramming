@@ -1,244 +1,197 @@
-#include <errno.h>
-#include <stdbool.h>
-#include <stdio.h>
+//libraries 
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <time.h>
+#include <stdio.h>
 #include <ctype.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
 
-#define COLOR_GREEN "\x1b[1;32m" // color for executables
-#define COLOR_LIGHT_BLUE "\x1b[1;94m" // color for directories
-#define COLOR_CYAN "\x1b[1;96m" // color for links
-#define COLOR_BACKG_RED "\x1b[0;41m"
-#define COLOR_RESET "\x1b[0m" // reset color settings
-#define COLOR_PURPLE "\x1b[0;35m"
-#define COLOR_BACKG_YELLOW "\x1b[0;43m"
 
-#define CPU 2
-// Exiting functions
-void exitingfromShell(char **args) {
-    exit(0);
-}
+//color variables for shell
+#define COLOR_GREEN "\x1b[1;32m" 
+#define COLOR_LIGHT_BLUE "\x1b[1;94m" 
+#define COLOR_RESET "\x1b[0m" 
 
-// changing directory
+//defines
+#define SIZE 1024
+#define MAX_SIZE 256
+
+//variables 
+
+typedef char *multipleTokenization_t;
+struct stat st; // struct for getting stats of file
+
+
+//getting username 
+char *getlogin();
+
 void ChangingDirectory(char **args) {
-    if (args[1] == NULL) {
-        fprintf(stderr, "Enter the second argument.\n");
-    } else {
-        if (chdir(args[1]) != 0) {
-            perror("");
+    if(args[1] == NULL) {
+        printf("Enter the second argument please\n");
+
+    }
+    else {
+        if(chdir(args[1]) !=0) {
         }
     }
 }
 
-// Usage --help
-void gettinghelpCase(char **args) {
-    char *gethelpCase =
-        "Test cases that included are:\n"
-        "  cd       Change the working directory.\n"
-        "  exit     Exit the shell.\n"
-        "  --help   Print this help text.\n"
-        "  -c       user and system CPU time used by the process\n"
-        "  -m       size of the operating residential memory used by the process\n"
-        "  -b       number of block input and output operations performed by the process\n"
-        "  -a       all options at once.\n"
-        ;
-    printf("%s", gethelpCase);
-}
 
-void usrsysCPUTime() {
-    
-    clock_t startingtime, endingtime;
-    int check = 0;
-    double CPUthatused = 0;
+//Splits the character that has more more characters
+//stackoverflow answer https://stackoverflow.com/q/29788983 by Jerry Coffin
+char *multipleTokenization(char *input, multipleTokenization_t *inptChar, char *delimiter)
+{
+    if (input != NULL)  *inptChar = input;
 
-    startingtime = clock();
+    if (*inptChar == NULL) return *inptChar;
 
-    check |= CPU;    
-
-    endingtime = clock();
-
-    CPUthatused = ((double)(endingtime - startingtime))/ CLOCKS_PER_SEC;
-    printf("Time that is used by processor is: %f.\n", CPUthatused);
-    
-}
-void sizeofOpresidentMemory() {
-
-
-   // printf("Size of the operating residential memory used by the process is:\n");
-}
-void sizeofblockInputOutput() {
-
-   // printf("Time that is used by processor is:.\n");
-
-}
-void allOptionsatonce() {
-    usrsysCPUTime();
-    sizeofOpresidentMemory();
-    sizeofblockInputOutput();
-}
-
-void SimpleShellRestricted() {
-    
-}
-
-typedef char *multi_tok_t;
-char *MultipleTokenize(char *inpt, multi_tok_t *str, char *delimeter) {
-    if(inpt != NULL) *str = inpt;
-    if(*str == NULL) return *str;
-
-    char *end = strstr(*str, delimeter);
-    if(end == NULL) {
-        char *temp = *str;
-        *str = NULL;
+    char *end = strstr(*inptChar, delimiter);
+    if (end == NULL)
+    {
+        char *temp = *inptChar;
+        *inptChar = NULL;
         return temp;
-
     }
-    char *temp = *str;
+
+    char *temp = *inptChar;
+
     *end = '\0';
-    *str = end +strlen(delimeter);
+    *inptChar = end + strlen(delimiter);
     return temp;
 }
 
-multi_tok_t init() {
-    return NULL;
-}
-
-// A builtin instance associates a command name with a handler function.
-struct usage {
-    char *name;
-    void (*func)(char **args);
-};
-
-// Array of built in commands.
-struct usage usageforFunctions[] = {
-    {"--help", gettinghelpCase},
-    {"exit", exitingfromShell},
-    {"cd", ChangingDirectory},
-    {"-c", usrsysCPUTime},
-    {"-m", sizeofOpresidentMemory},
-    {"-b", sizeofblockInputOutput},
-    {"-a", allOptionsatonce},
-    {"./shell -r", ChangingDirectory},
-};
-
-// Returns the number of registered commands.
-int sizeofUsageFunctions() {
-    return sizeof(usageforFunctions) / sizeof(struct usage);
-}
-int backgroundProcess = 0;
-void SimpleExec(char **args) {
-    for (int i = 0; i < sizeofUsageFunctions(); i++) {
-        if (strcmp(args[0], usageforFunctions[i].name) == 0) {
-            usageforFunctions[i].func(args);
-            return;
-        }
+multipleTokenization_t init() { 
+    return NULL; 
     }
-    backgroundProcessing();
 
-    //if(strchr(args, '/') == NULL) {
-        int i;
-        pid_t cpid = fork();
-        struct rlimit rlim;
+/* signal handler */
+void sig_handler(int signo);
 
-        if (cpid = 0) {
-            execvp(args[0], args);
-            perror("");
-            exit(1);
-        } else if (cpid > 0) {
-            int status;
-            do {
-                waitpid(cpid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-        } else {
-            if(!backgroundProcess) {
-                waitpid(cpid, NULL, 0);
+char *argv[];
+int backgroundPro;
+void backgroundProcess() {
+    if(strcmp(argv[0], "&") == 0) {
+        backgroundPro = 1;
+        argv[0] = NULL;
+    }
+}
+int main(int argc, char *argv[])
+{
+    FILE *fp;
+
+    
+    // command shell loop
+    while(1)
+    {
+        int proceed = 0;
+        char line[MAX_SIZE];
+        char *commandLine = (char*)calloc(SIZE, sizeof(char*));
+
+	signal(SIGUSR1, sig_handler);
+
+        // read command lines
+        while (proceed == 0)
+        {
+            // read a line
+            char *p = getenv("USER");
+            if(p==NULL) return EXIT_FAILURE;
+            
+            
+            printf("%s%s%s%ssimpleshell%s:",COLOR_GREEN,p,COLOR_RESET,COLOR_LIGHT_BLUE,COLOR_RESET);
+            fgets(line, MAX_SIZE, stdin);
+            printf("\n");
+            if (strlen(line) == 0)  break;
+            if(line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';
+            if(line[strlen(line) - 1] == '\\')
+            {
+                proceed = 0;
+                line[strlen(line) - 1] = '\0';
             }
-            backgroundProcess = 0;
+            else proceed = 1;
+
+            if ((strlen(commandLine) > 0) && (line[strlen(line) - 2] == '&')) strcat(commandLine, "&&");
+            strcat(commandLine, line);
         }
-    //}
-}
 
-void backgroundProcessing(char **args) {
-    // if(strcmp(args[0], "&") == 0) {
-    //     backgroundProcess = 1;
-    //     args[0] = NULL;
-    // }
-}
+        pid_t pid;
 
+        //backgroundProcess(); // homework 3 task 3
 
-char** SplittingLines(char *line) {
-    int length = 0;
-    int capacity = 16;
+        int status;
+        multipleTokenization_t s = init();
 
-    char **tokens = malloc(capacity * sizeof(char*));
-    if (!tokens) {
-        perror("");
-        exit(1);
-    }
-
-    char *delimiters = " \t\r\n";
-    char *token = strtok(line, delimiters);
-
-    while (token != NULL) {
-        tokens[length] = token;
-        length++;
-
-        if (length >= capacity) {
-            capacity = (int) (capacity * 1.5);
-            tokens = realloc(tokens, capacity * sizeof(char*));
-            if (!tokens) {
-                perror("");
-                exit(1);
+        
+        char *cmdline = multipleTokenization(commandLine, &s, "&&"); //3rd task
+        while(cmdline != NULL)
+        {
+            if (strlen(cmdline) == 0) break;
+            // command line arguments 
+            if (strcmp(cmdline, "exit") == 0) {
+                exit(0);
             }
-        }
+            if(strcmp(cmdline, "cd") == 0) { 
+                ChangingDirectory(argv[0]); 
+                //printf("not finished yet\n");
+            }
+            if(strcmp(cmdline, "clr") == 0) {
+                char c[50];
+                strcpy(c, "clear");
+                system(c);
+            }
+            if(strcmp(cmdline, "cd") == 0) {
+                char c[50];
+                strcpy(c, "cd");
+                system(c);
+            }
+            if(strchr(argv[0], '/') == NULL) {
+            // try to execute
+            if ((pid = fork()) < 0)
+            {
+                fprintf(stderr, "Process is not created. Try again.\n");
+                return -1;
+            }
+            else if (pid == 0) { // child process
+                // 5th task here
+                
 
-        token = strtok(NULL, delimiters);
+				if((fp = popen(cmdline, "r")) == NULL) {
+					fprintf(stderr, "ERROR: Cannot create the child process for shell.");
+					exit(EXIT_FAILURE);
+				}
+				
+				char *line = NULL;
+				size_t length = 0;
+				
+				while(getline(&line, &length, fp) != -1) printf("%s", line);
+				
+				pclose(fp);
+				exit(0);
+               
+            }
+            // Implement here
+            else {
+                if(backgroundPro) {
+                    printf("background job for %d\n starting",pid);
+                    
+                }else {
+                    waitpid(pid, NULL, 0);
+                }
+                //backgroundPro = 0;
+            }
+            }
+
+        }
     }
 
-    tokens[length] = NULL;
-    return tokens;
+    return 0;
 }
 
-char* ReadingAllPossibleLines() {
-    char *line = NULL;
-    size_t buflen = 0;
-    errno = 0;
-    ssize_t strlen = getline(&line, &buflen, stdin);
-    if (strlen < 0) {
-        if (errno) {
-            perror("");
-        }
-        exit(1);
-    }
-    return line;
-}
-
-
-int main(int argc, char *argv[]) {
-
-    while (true) {
-        printf("shell:> ");
-        char *line = ReadingAllPossibleLines();
-        char **tokens = SplittingLines(line);
-
-        if(strcmp(argv[0],"clr") == 0){
-            /* uses system function to clear the screen*/
-            char c[50];
-            strcpy( c, "clear");
-            system(c);
-        }
- 
-        if (tokens[0] != NULL) {
-            SimpleExec(tokens);
-        }
-
-        free(tokens);
-        free(line);
-    }
+void sig_handler(int signo){
+	printf("Signal has been received: %d", signo);
 }
